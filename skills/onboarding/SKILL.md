@@ -1,6 +1,6 @@
 ---
 name: agent-onboarding
-description: Post-install onboarding flow. Agent greets the student, activates self-compiler, and guides them through configuring CLAUDE.md and workspace files through natural conversation. Use after fresh Claude Code install via EdgeLab installer. Covers identity, goals, style, stack, and generates all config files. The whole flow takes 5-10 minutes.
+description: Post-install onboarding flow. Agent greets the user, activates self-compiler, and guides them through configuring CLAUDE.md and workspace files through natural conversation. Use after fresh Claude Code install. Covers identity, goals, style, stack, and generates all config files. The whole flow takes 5-10 minutes.
 version: 1.0.0
 user-invocable: true
 ---
@@ -12,7 +12,7 @@ configured agent through a short conversational flow.
 
 ## When to activate
 
-- Immediately after EdgeLab installer finishes
+- Immediately after the installer finishes
 - When the student runs their first `claude` session
 - When `/onboarding` is invoked explicitly
 
@@ -131,6 +131,7 @@ Steps:
    - `{{NAME}}`, `{{TIMEZONE}}`, `{{LANGUAGE}}` from Phase 2
    - `{{CODE_STYLE}}` from Phase 4
    - `{{COMMIT_LANGUAGE}}` from Phase 4 (default: English)
+   - `{{STYLE_BRIEF_OR_DETAILED}}` from Phase 4 (default: "Brief answers, code first")
 3. Present the draft to the student:
    > "Here's your CLAUDE.md draft. Want me to adjust anything?"
 4. Apply requested changes
@@ -143,16 +144,20 @@ questions.
 
 ### Phase 7: Completion
 
-Send exactly this:
+Send a completion message listing the actual files created with their full paths:
 
 > Setup complete! Here's what I created:
-> - USER.md -- your profile
-> - CLAUDE.md -- my operating rules
-> - knowledge/ -- your structured knowledge base
+> - `~/.claude/CLAUDE.md` -- my operating rules
+> - `~/.claude/core/USER.md` -- your profile
+> - `~/knowledge/profile.md` -- extended identity
+> - `~/knowledge/goals.md` -- your goals
+> - `~/knowledge/style.md` -- communication preferences
+> - `~/knowledge/rules.md` -- boundaries
+> - `~/knowledge/stack.md` -- tech stack
 >
 > I'm ready to work. What's our first task?
 
-List the actual files created with their paths.
+Only list files that were actually created (skip phases that were skipped).
 
 ---
 

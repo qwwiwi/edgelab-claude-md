@@ -1,9 +1,9 @@
 ---
 name: present
-description: "Generate beautifully formatted standalone HTML documents in Notion style. Triggers: /present, 'make a presentation', 'visualize', 'format as HTML', 'create a document'. Accepts any content (lesson, report, comparison, roadmap, dashboard) and produces a single HTML file with light/dark theme toggle."
+description: "Generate beautifully formatted standalone HTML documents with clean minimal design. Triggers: /present, 'make a presentation', 'visualize', 'format as HTML', 'create a document'. Accepts any content (lesson, report, comparison, roadmap, dashboard) and produces a single HTML file with light/dark theme toggle. Zero external dependencies."
 ---
 
-# Present -- HTML Document Generator (Notion Style)
+# Present -- HTML Document Generator
 
 ## When to use
 - User writes `/present` or asks to format something nicely
@@ -83,7 +83,7 @@ description: "Generate beautifully formatted standalone HTML documents in Notion
 
 **Code (pre > code)**
 - code-bg, card-border, border-radius: 0.5rem
-- **MANDATORY:** `white-space: pre-wrap; word-wrap: break-word; word-break: break-all;`
+- **MANDATORY:** `white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;`
   (prevents horizontal scroll on mobile)
 - font-size: 0.8125rem, line-height: 1.6
 
@@ -164,7 +164,7 @@ description: "Generate beautifully formatted standalone HTML documents in Notion
 (function() {
   const toggle = document.querySelector('.theme-toggle');
   const html = document.documentElement;
-  const stored = localStorage.getItem('theme');
+  const stored = localStorage.getItem('present-theme');
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const theme = stored || (prefersDark ? 'dark' : 'light');
   html.setAttribute('data-theme', theme);
@@ -173,7 +173,7 @@ description: "Generate beautifully formatted standalone HTML documents in Notion
     const current = html.getAttribute('data-theme');
     const next = current === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', next);
-    localStorage.setItem('theme', next);
+    localStorage.setItem('present-theme', next);
   });
 })();
 ```
@@ -213,8 +213,9 @@ description: "Generate beautifully formatted standalone HTML documents in Notion
 ## Rules
 
 - **Standalone HTML:** single file, zero external dependencies (no Google Fonts, no CDN)
+- **HTML escaping:** all user-supplied text MUST be HTML-escaped before insertion (`<` -> `&lt;`, `>` -> `&gt;`, `&` -> `&amp;`, `"` -> `&quot;`). Never insert raw user strings into HTML attributes or script contexts
 - **Mobile-first:** responsive, max-width container
-- **pre/code blocks:** ALWAYS `white-space: pre-wrap; word-wrap: break-word; word-break: break-all;`
+- **pre/code blocks:** ALWAYS `white-space: pre-wrap; word-wrap: break-word; overflow-wrap: break-word;`
 - **Content language:** match user's language (the template/skill is in English, content adapts)
 - **Theme toggle:** always present, top-right corner
 - **Default theme:** respect `prefers-color-scheme`, fallback to light

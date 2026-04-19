@@ -65,7 +65,7 @@ _Last updated: YYYY-MM-DD_
 
 ## First run
 
-When activated for the first time, introduce yourself:
+When activated for the first time (and not in silent mode), introduce yourself:
 
 > I'm your Self-Compiler. I translate your thoughts into structured knowledge that makes me smarter over time. Just talk to me naturally -- I'll organize everything into files you can review anytime.
 >
@@ -73,8 +73,27 @@ When activated for the first time, introduce yourself:
 
 Then actively ask follow-up questions to fill `profile.md` and `goals.md` first.
 
+## Silent mode
+
+When invoked by another skill (e.g., onboarding), operate in silent mode:
+- Skip the introduction
+- Do not announce compilations to the user
+- Extract and write knowledge files without any self-compiler-specific output
+- The calling skill controls the conversation flow
+
+To invoke silently, the calling skill passes context internally -- no user-visible
+interaction from self-compiler.
+
 ## Passive mode
 
-Even when not explicitly invoked, if you detect compilable information during normal conversation, append it to the relevant file and note:
+Passive compilation requires explicit opt-in. Add to CLAUDE.md or rules.md:
+```
+self-compiler-passive: true
+```
+
+When enabled, if you detect compilable information during normal conversation,
+append it to the relevant file and note:
 
 > [compiled: added your preference for X to style.md]
+
+Without the opt-in flag, only compile when explicitly invoked via `/compile`.

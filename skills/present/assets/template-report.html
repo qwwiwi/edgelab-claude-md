@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Infrastructure Health Report</title>
+<style>
+/* ── Light theme (default) ── */
+:root, [data-theme="light"] {
+  --bg: #ffffff;
+  --text: #37352f;
+  --text-muted: #787774;
+  --card-bg: #f7f6f3;
+  --card-border: rgba(55,53,47,0.09);
+  --accent: #2eaadc;
+  --accent-dim: rgba(46,170,220,0.1);
+  --code-bg: #f7f6f3;
+  --code-text: #37352f;
+  --divider: rgba(55,53,47,0.09);
+  --error: #eb5757;
+  --error-dim: rgba(235,87,87,0.1);
+  --success: #0f7b6c;
+  --success-dim: rgba(15,123,108,0.1);
+  --warning: #d9730d;
+  --warning-dim: rgba(217,115,13,0.1);
+  --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.04);
+  --toggle-bg: #f7f6f3;
+  --toggle-border: rgba(55,53,47,0.16);
+}
+
+/* ── Dark theme ── */
+[data-theme="dark"] {
+  --bg: #191919;
+  --text: #e6e6e5;
+  --text-muted: #999999;
+  --card-bg: #252525;
+  --card-border: rgba(255,255,255,0.08);
+  --accent: #529cca;
+  --accent-dim: rgba(82,156,202,0.15);
+  --code-bg: #252525;
+  --code-text: #e6e6e5;
+  --divider: rgba(255,255,255,0.08);
+  --error: #eb5757;
+  --error-dim: rgba(235,87,87,0.15);
+  --success: #4dab9a;
+  --success-dim: rgba(77,171,154,0.15);
+  --warning: #ffa344;
+  --warning-dim: rgba(255,163,68,0.15);
+  --shadow: 0 1px 3px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.04);
+  --toggle-bg: #252525;
+  --toggle-border: rgba(255,255,255,0.12);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s, color 0.3s;
+}
+
+.container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+/* ── Theme toggle ── */
+.theme-toggle {
+  position: fixed; top: 1rem; right: 1rem;
+  width: 40px; height: 40px; border-radius: 8px;
+  border: 1px solid var(--toggle-border); background: var(--toggle-bg);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.3s, border-color 0.3s; z-index: 100;
+}
+.theme-toggle:hover { border-color: var(--accent); }
+.theme-toggle svg { width: 18px; height: 18px; fill: var(--text-muted); }
+.theme-toggle .icon-sun { display: none; }
+.theme-toggle .icon-moon { display: block; }
+[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+/* ── Header ── */
+.doc-header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 1px solid var(--divider); }
+.doc-badge { display: inline-block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); background: var(--accent-dim); padding: 0.375rem 1rem; border-radius: 100px; margin-bottom: 1rem; }
+.doc-title { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.5rem; }
+.doc-subtitle { font-size: 1rem; color: var(--text-muted); }
+
+/* ── Metric grid ── */
+.metric-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 2rem; }
+
+.metric-card {
+  background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 0.75rem;
+  padding: 1.25rem; text-align: center; box-shadow: var(--shadow);
+  transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
+}
+
+.metric-value { font-size: 2rem; font-weight: 700; color: var(--accent); line-height: 1.2; }
+.metric-value.success { color: var(--success); }
+.metric-value.warning { color: var(--warning); }
+.metric-value.error { color: var(--error); }
+.metric-label { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-top: 0.375rem; }
+
+/* ── Section ── */
+.section { margin-bottom: 2.5rem; }
+.section-title { font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--divider); }
+p { margin-bottom: 1rem; font-size: 0.9375rem; }
+
+/* ── Table ── */
+table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.875rem; }
+th { text-align: left; font-weight: 600; padding: 0.625rem 0.75rem; border-bottom: 2px solid var(--divider); color: var(--accent); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+td { padding: 0.625rem 0.75rem; border-bottom: 1px solid var(--divider); color: var(--text-muted); transition: border-color 0.3s; }
+td:first-child { color: var(--text); font-weight: 500; }
+tr:last-child td { border-bottom: none; }
+
+/* ── Status indicators ── */
+.status { font-weight: 600; font-size: 0.8125rem; }
+.status-ok { color: var(--success); }
+.status-warn { color: var(--warning); }
+.status-err { color: var(--error); }
+
+/* ── Summary ── */
+.summary-card {
+  background: var(--accent-dim); border: 1px solid var(--accent); border-radius: 0.75rem;
+  padding: 1.5rem; margin-top: 1.5rem; transition: background 0.3s, border-color 0.3s;
+}
+.summary-card h3 { font-size: 1.125rem; font-weight: 700; margin-bottom: 0.75rem; }
+.summary-card ul { padding-left: 1.25rem; margin: 0; font-size: 0.9375rem; }
+.summary-card li { margin-bottom: 0.375rem; }
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .container { padding: 1rem 1rem 3rem; }
+  .doc-title { font-size: 1.5rem; }
+  .metric-grid { grid-template-columns: 1fr; }
+  table { font-size: 0.8125rem; }
+  th, td { padding: 0.5rem; }
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" aria-label="Toggle theme">
+  <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+</button>
+
+<div class="container">
+
+<!-- Header -->
+<div class="doc-header">
+  <div class="doc-badge">Report -- January 2025</div>
+  <h1 class="doc-title">Infrastructure Health Report</h1>
+  <p class="doc-subtitle">Monthly overview of system performance, uptime, and incidents.</p>
+</div>
+
+<!-- Metrics -->
+<div class="metric-grid">
+  <div class="metric-card">
+    <div class="metric-value success">99.97%</div>
+    <div class="metric-label">Uptime</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value">142ms</div>
+    <div class="metric-label">Avg Response</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-value warning">3</div>
+    <div class="metric-label">Incidents</div>
+  </div>
+</div>
+
+<!-- Services -->
+<div class="section">
+  <h2 class="section-title">Service Status</h2>
+  <table>
+    <thead><tr><th>Service</th><th>Uptime</th><th>P95 Latency</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>API Gateway</td><td>99.99%</td><td>89ms</td><td><span class="status status-ok">Healthy</span></td></tr>
+      <tr><td>Auth Service</td><td>99.98%</td><td>124ms</td><td><span class="status status-ok">Healthy</span></td></tr>
+      <tr><td>Database (primary)</td><td>99.99%</td><td>12ms</td><td><span class="status status-ok">Healthy</span></td></tr>
+      <tr><td>Search Index</td><td>99.85%</td><td>340ms</td><td><span class="status status-warn">Degraded</span></td></tr>
+      <tr><td>Email Worker</td><td>98.70%</td><td>2100ms</td><td><span class="status status-err">Issues</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Incidents -->
+<div class="section">
+  <h2 class="section-title">Incidents</h2>
+  <table>
+    <thead><tr><th>Date</th><th>Severity</th><th>Service</th><th>Duration</th><th>Root Cause</th></tr></thead>
+    <tbody>
+      <tr><td>Jan 08</td><td><span class="status status-warn">Medium</span></td><td>Search Index</td><td>47 min</td><td>Index corruption after deploy</td></tr>
+      <tr><td>Jan 15</td><td><span class="status status-err">High</span></td><td>Email Worker</td><td>3h 12min</td><td>SMTP provider outage</td></tr>
+      <tr><td>Jan 22</td><td><span class="status status-warn">Medium</span></td><td>Search Index</td><td>22 min</td><td>Memory limit exceeded</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Summary -->
+<div class="summary-card">
+  <h3>Recommendations</h3>
+  <ul>
+    <li><strong>Search Index</strong> -- increase memory limit from 2GB to 4GB; add pre-deploy index validation</li>
+    <li><strong>Email Worker</strong> -- add fallback SMTP provider; implement retry queue with exponential backoff</li>
+    <li><strong>Monitoring</strong> -- reduce alert threshold for search latency from 500ms to 300ms</li>
+  </ul>
+</div>
+
+</div>
+
+<script>
+(function() {
+  var toggle = document.querySelector('.theme-toggle');
+  var html = document.documentElement;
+  var stored = localStorage.getItem('present-theme');
+  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var theme = stored || (prefersDark ? 'dark' : 'light');
+  html.setAttribute('data-theme', theme);
+
+  toggle.addEventListener('click', function() {
+    var current = html.getAttribute('data-theme');
+    var next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('present-theme', next);
+  });
+})();
+</script>
+</body>
+</html>

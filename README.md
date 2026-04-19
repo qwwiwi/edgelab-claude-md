@@ -71,6 +71,16 @@ CLAUDE.md -- главный конфигурационный файл Claude Cod
 | [examples/global-claude-filled.md](examples/global-claude-filled.md) | Глобальный -- два агента на VPS |
 | [examples/workspace-claude-filled.md](examples/workspace-claude-filled.md) | Рабочий -- агент-координатор |
 
+## Скиллы
+
+Готовые навыки для агентов -- устанавливай и используй:
+
+| Скилл | Описание |
+|---|---|
+| [skills/present](skills/present/) | HTML-визуализация в стиле Notion (light/dark тема, zero dependencies) |
+| [skills/onboarding](skills/onboarding/) | Пост-установочный онбординг: агент знакомится с пользователем и заполняет CLAUDE.md через диалог |
+| [skills/self-compiler](skills/self-compiler/) | Компилятор знаний: переводит разговор в структурированные файлы (profile, goals, stack, rules) |
+
 ## Ключевые паттерны
 
 1. **Приоритет правил:** Безопасность > Указание оператора > Проверка фактов > Границы > Стиль

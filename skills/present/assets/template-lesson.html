@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How AI Agent Memory Works</title>
+<style>
+:root, [data-theme="light"] {
+  --bg: #ffffff; --text: #37352f; --text-muted: #787774;
+  --card-bg: #f7f6f3; --card-border: rgba(55,53,47,0.09);
+  --accent: #2eaadc; --accent-dim: rgba(46,170,220,0.1);
+  --code-bg: #f7f6f3; --code-text: #37352f;
+  --divider: rgba(55,53,47,0.09);
+  --error: #eb5757; --error-dim: rgba(235,87,87,0.1);
+  --success: #0f7b6c;
+  --shadow: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.04);
+  --toggle-bg: #f7f6f3; --toggle-border: rgba(55,53,47,0.16);
+}
+[data-theme="dark"] {
+  --bg: #191919; --text: #e6e6e5; --text-muted: #999999;
+  --card-bg: #252525; --card-border: rgba(255,255,255,0.08);
+  --accent: #529cca; --accent-dim: rgba(82,156,202,0.15);
+  --code-bg: #252525; --code-text: #e6e6e5;
+  --divider: rgba(255,255,255,0.08);
+  --error: #eb5757; --error-dim: rgba(235,87,87,0.15);
+  --success: #4dab9a;
+  --shadow: 0 1px 3px rgba(0,0,0,0.2), 0 0 0 1px rgba(255,255,255,0.04);
+  --toggle-bg: #252525; --toggle-border: rgba(255,255,255,0.12);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg); color: var(--text); line-height: 1.7;
+  -webkit-font-smoothing: antialiased; transition: background 0.3s, color 0.3s;
+}
+.container { max-width: 720px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+.theme-toggle {
+  position: fixed; top: 1rem; right: 1rem; width: 40px; height: 40px;
+  border-radius: 8px; border: 1px solid var(--toggle-border); background: var(--toggle-bg);
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background 0.3s, border-color 0.3s; z-index: 100;
+}
+.theme-toggle:hover { border-color: var(--accent); }
+.theme-toggle svg { width: 18px; height: 18px; fill: var(--text-muted); }
+.theme-toggle .icon-sun { display: none; }
+[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+.doc-header { text-align: center; margin-bottom: 2.5rem; padding-bottom: 2rem; border-bottom: 1px solid var(--divider); }
+.doc-badge { display: inline-block; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); background: var(--accent-dim); padding: 0.375rem 1rem; border-radius: 100px; margin-bottom: 1rem; }
+.doc-title { font-size: 2rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.75rem; }
+.doc-subtitle { font-size: 1rem; color: var(--text-muted); max-width: 520px; margin: 0 auto; }
+
+.toc { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 0.75rem; padding: 1.25rem 1.5rem; margin-bottom: 2.5rem; box-shadow: var(--shadow); transition: background 0.3s, border-color 0.3s; }
+.toc-title { font-size: 0.875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.75rem; }
+.toc-list { list-style: none; }
+.toc-list a { display: block; padding: 0.4rem 0.75rem; border-radius: 0.375rem; font-size: 0.875rem; color: var(--text-muted); text-decoration: none; transition: background 0.15s, color 0.15s; }
+.toc-list a:hover { background: var(--accent-dim); color: var(--text); }
+.toc-num { color: var(--accent); font-weight: 600; margin-right: 0.5rem; }
+
+.section { margin-bottom: 2.5rem; scroll-margin-top: 2rem; }
+.section-title { font-size: 1.5rem; font-weight: 600; margin-bottom: 1rem; padding-bottom: 0.625rem; border-bottom: 1px solid var(--divider); }
+.section-title .num { color: var(--accent); margin-right: 0.5rem; }
+
+p { margin-bottom: 1rem; font-size: 0.9375rem; }
+strong { font-weight: 600; }
+ul, ol { margin-bottom: 1rem; padding-left: 1.5rem; font-size: 0.9375rem; }
+li { margin-bottom: 0.375rem; }
+
+code { font-family: "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace; font-size: 0.8125rem; background: var(--code-bg); color: var(--code-text); padding: 0.125rem 0.375rem; border-radius: 0.25rem; }
+pre { background: var(--code-bg); border: 1px solid var(--card-border); border-radius: 0.5rem; padding: 1rem 1.25rem; margin-bottom: 1.25rem; white-space: pre-wrap; word-wrap: break-word; word-break: break-all; box-shadow: var(--shadow); transition: background 0.3s, border-color 0.3s; }
+pre code { background: none; padding: 0; line-height: 1.6; }
+
+.card { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1.25rem; box-shadow: var(--shadow); transition: background 0.3s, border-color 0.3s; }
+.card-title { font-weight: 600; font-size: 0.9375rem; margin-bottom: 0.5rem; }
+
+table { width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.875rem; }
+th { text-align: left; font-weight: 600; padding: 0.625rem 0.75rem; border-bottom: 2px solid var(--divider); color: var(--accent); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+td { padding: 0.625rem 0.75rem; border-bottom: 1px solid var(--divider); color: var(--text-muted); }
+td:first-child { color: var(--text); font-weight: 500; }
+tr:last-child td { border-bottom: none; }
+
+.callout { background: var(--accent-dim); border-left: 3px solid var(--accent); border-radius: 0 0.5rem 0.5rem 0; padding: 1rem 1.25rem; margin-bottom: 1.25rem; font-size: 0.9375rem; }
+.callout-label { font-weight: 600; color: var(--accent); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.375rem; }
+
+.key-point { background: var(--card-bg); border: 1px solid var(--accent); border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1.25rem; }
+.key-point-label { font-weight: 700; color: var(--accent); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+
+.error-box { background: var(--error-dim); border: 1px solid rgba(235,87,87,0.2); border-radius: 0.75rem; padding: 1.25rem; margin-bottom: 1rem; }
+.error-box .error-title { color: var(--error); font-weight: 600; margin-bottom: 0.375rem; }
+
+.summary-card { background: var(--accent-dim); border: 1px solid var(--accent); border-radius: 0.75rem; padding: 1.5rem; margin-top: 2rem; }
+.summary-card h3 { font-size: 1.25rem; font-weight: 700; margin-bottom: 1rem; }
+
+@media (max-width: 640px) {
+  .container { padding: 1rem 1rem 3rem; }
+  .doc-title { font-size: 1.5rem; }
+  .section-title { font-size: 1.25rem; }
+  pre { padding: 0.75rem; font-size: 0.75rem; }
+  table { font-size: 0.8125rem; }
+  th, td { padding: 0.5rem; }
+}
+</style>
+</head>
+<body>
+<button class="theme-toggle" aria-label="Toggle theme">
+  <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+  <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+</button>
+<div class="container">
+
+<div class="doc-header">
+  <div class="doc-badge">Lesson -- Memory Systems</div>
+  <h1 class="doc-title">How AI Agent Memory Works</h1>
+  <p class="doc-subtitle">Sessions, memory layers, persistent files, and vector search -- everything an agent needs to remember.</p>
+</div>
+
+<div class="toc">
+  <div class="toc-title">Contents</div>
+  <ul class="toc-list">
+    <li><a href="#s1"><span class="toc-num">01</span>Why agents need memory</a></li>
+    <li><a href="#s2"><span class="toc-num">02</span>The session lifecycle</a></li>
+    <li><a href="#s3"><span class="toc-num">03</span>Memory layers</a></li>
+    <li><a href="#s4"><span class="toc-num">04</span>File-based memory</a></li>
+    <li><a href="#s5"><span class="toc-num">05</span>Vector search</a></li>
+    <li><a href="#s6"><span class="toc-num">06</span>Summary</a></li>
+  </ul>
+</div>
+
+<div class="section" id="s1">
+  <h2 class="section-title"><span class="num">01</span> Why agents need memory</h2>
+  <p>Every AI session starts with a <strong>blank slate</strong>. The model remembers nothing from the last conversation -- not decisions, not preferences, not even your name.</p>
+  <p>Memory is a set of structured files the agent reads at boot, restoring full context before your first message.</p>
+  <div class="callout">
+    <div class="callout-label">Analogy</div>
+    Memory is a notebook on your desk. Every morning you open it, read yesterday's notes, and pick up where you left off.
+  </div>
+</div>
+
+<div class="section" id="s2">
+  <h2 class="section-title"><span class="num">02</span> The session lifecycle</h2>
+  <table>
+    <thead><tr><th>Phase</th><th>What happens</th><th>Memory role</th></tr></thead>
+    <tbody>
+      <tr><td>Boot</td><td>Load system prompt + memory files</td><td>Identity, context, rules</td></tr>
+      <tr><td>Active</td><td>Conversation within context window</td><td>Working memory (in-context)</td></tr>
+      <tr><td>Save</td><td>Session ends, key facts extracted</td><td>Write to persistent storage</td></tr>
+      <tr><td>Next boot</td><td>New session loads updated files</td><td>Continuity restored</td></tr>
+    </tbody>
+  </table>
+  <div class="key-point">
+    <div class="key-point-label">Key concept</div>
+    Context windows are finite: 200K tokens for Claude, 128K for GPT. Anything beyond that is lost unless persisted to files or a database.
+  </div>
+</div>
+
+<div class="section" id="s3">
+  <h2 class="section-title"><span class="num">03</span> Memory layers</h2>
+  <div class="card">
+    <div class="card-title">Layer 1 -- Identity (always loaded)</div>
+    <p>Who the agent is, who the user is, core rules. Small stable files: <code>SOUL.md</code>, <code>USER.md</code>, <code>RULES.md</code>.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">Layer 2 -- Warm (recent decisions)</div>
+    <p>Last 14 days of decisions and active projects. Always in context, rotated regularly.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">Layer 3 -- Cold (on-demand)</div>
+    <p>Historical facts, past decisions. Loaded only when the agent needs to look something up.</p>
+  </div>
+  <div class="card">
+    <div class="card-title">Layer 4 -- Semantic (vector DB)</div>
+    <p>When files exceed 50+, vector search indexes all content and retrieves by meaning.</p>
+  </div>
+  <pre><code>Layer 1: Identity  [always loaded, ~2K tokens]
+Layer 2: Warm      [always loaded, ~4K tokens, rotated 14d]
+Layer 3: Cold      [on-demand read, unlimited]
+Layer 4: Semantic  [vector search, cross-session]</code></pre>
+</div>
+
+<div class="section" id="s4">
+  <h2 class="section-title"><span class="num">04</span> File-based memory</h2>
+  <pre><code>workspace/
+├── SOUL.md        # agent identity, style, principles
+├── USER.md        # user profile and preferences
+├── RULES.md       # operational boundaries
+├── MEMORY.md      # long-term facts and decisions
+├── decisions.md   # recent decisions (warm layer)
+├── handoff.md     # last session context (hot)
+└── memory/        # date-based journals (cold)
+    └── 2025-01-15.md</code></pre>
+
+  <div class="callout">
+    <div class="callout-label">Best practice</div>
+    Keep identity files under 200 lines each. Every character costs tokens -- the agent reads these at every session start.
+  </div>
+
+  <div class="error-box">
+    <div class="error-title">Common mistake: secrets in memory files</div>
+    Never store API keys or tokens in memory files. Store <em>paths</em> to secret files instead. If the workspace ever leaks, keys stay safe.
+  </div>
+</div>
+
+<div class="section" id="s5">
+  <h2 class="section-title"><span class="num">05</span> Vector search</h2>
+  <p>When your agent has hundreds of files, reading them all is impossible. Vector search converts text into embeddings and finds relevant content by meaning.</p>
+  <table>
+    <thead><tr><th>Mode</th><th>How it works</th><th>Best for</th></tr></thead>
+    <tbody>
+      <tr><td>Keyword (BM25)</td><td>Exact word matching</td><td>Known terms</td></tr>
+      <tr><td>Vector</td><td>Semantic similarity</td><td>Fuzzy queries</td></tr>
+      <tr><td>Hybrid</td><td>Keyword + vector + rerank</td><td>Best quality</td></tr>
+    </tbody>
+  </table>
+  <pre><code># Index memory files
+memory-index update ./workspace/memory/
+
+# Search by meaning
+memory-index query "what auth method did we choose?"
+# [0.92] decisions.md: "JWT auth over session cookies"
+# [0.85] MEMORY.md: "Auth: JWT RS256, 15min expiry"</code></pre>
+  <div class="key-point">
+    <div class="key-point-label">When to add vector search</div>
+    Start with file-based memory. Add vector search at 50+ files. Premature optimization adds complexity without value.
+  </div>
+</div>
+
+<div class="section" id="s6">
+  <h2 class="section-title"><span class="num">06</span> Summary</h2>
+  <div class="summary-card">
+    <h3>Memory Components</h3>
+    <table>
+      <thead><tr><th>Component</th><th>Purpose</th><th>Required?</th></tr></thead>
+      <tbody>
+        <tr><td>SOUL.md</td><td>Agent identity</td><td style="color: var(--success);">Essential</td></tr>
+        <tr><td>USER.md</td><td>User profile</td><td style="color: var(--success);">Essential</td></tr>
+        <tr><td>RULES.md</td><td>Boundaries</td><td style="color: var(--success);">Essential</td></tr>
+        <tr><td>decisions.md</td><td>Recent decisions</td><td style="color: var(--accent);">Recommended</td></tr>
+        <tr><td>MEMORY.md</td><td>Long-term facts</td><td>As needed</td></tr>
+        <tr><td>Vector DB</td><td>Semantic search</td><td>50+ files</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 1rem; text-align: center; color: var(--accent); font-weight: 600;">Start with three files. Scale as your agent's knowledge grows.</p>
+  </div>
+</div>
+
+</div>
+<script>
+(function() {
+  var t = document.querySelector('.theme-toggle'), h = document.documentElement;
+  var s = localStorage.getItem('present-theme');
+  h.setAttribute('data-theme', s || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  t.addEventListener('click', function() {
+    var n = h.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    h.setAttribute('data-theme', n);
+    localStorage.setItem('present-theme', n);
+  });
+})();
+</script>
+</body>
+</html>
